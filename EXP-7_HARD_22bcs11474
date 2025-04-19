@@ -1,0 +1,99 @@
+// Hard Level (Spring + Hibernate + Transaction Management)
+
+
+// Account.java
+import javax.persistence.*;
+
+@Entity
+public class Account {
+    @Id
+    private int id;
+    private String name;
+    private double balance;
+
+    // Getters and Setters
+}
+
+// TransactionJava.java
+import javax.persistence.*;
+
+@Entity
+public class TransactionJava {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int transactionId;
+
+    private int fromAccount;
+    private int toAccount;
+    private double amount;
+
+    // Getters and Setters
+}
+
+<!-- applicationContext.xml -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/tx
+       http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <bean id="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+        <property name="configLocation" value="classpath:hibernate.cfg.xml"/>
+    </bean>
+
+    <bean id="transactionManager" class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+        <property name="sessionFactory" ref="sessionFactory"/>
+    </bean>
+
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+    <context:component-scan base-package="com.example"/>
+</beans>
+
+// BankService.java
+import org.springframework.transaction.annotation.Transactional;
+import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class BankService {
+
+    @Autowired
+    private SessionFactory sessionFactory;
+
+    @Transactional
+    public void transfer(int fromId, int toId, double amount) {
+        Session session = sessionFactory.getCurrentSession();
+        Account from = session.get(Account.class, fromId);
+        Account to = session.get(Account.class, toId);
+
+        from.setBalance(from.getBalance() - amount);
+        to.setBalance(to.getBalance() + amount);
+
+        TransactionJava tx = new TransactionJava();
+        tx.setFromAccount(fromId);
+        tx.setToAccount(toId);
+        tx.setAmount(amount);
+        session.save(tx);
+    }
+}
+
+// Main.java
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+public class Main {
+    public static void main(String[] args) {
+        ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
+        BankService bankService = context.getBean(BankService.class);
+        try {
+            bankService.transfer(1, 2, 500);
+            System.out.println("Transaction successful.");
+        } catch (Exception e) {
+            System.out.println("Transaction failed: " + e.getMessage());
+        }
+    }
+}
+
