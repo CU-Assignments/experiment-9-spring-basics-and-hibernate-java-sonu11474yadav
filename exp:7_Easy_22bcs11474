@@ -1,0 +1,16 @@
+//Easy Level (Spring DI with Java-based Configuration).
+
+// Course.java
+public class Course {
+    private String courseName;
+    private int duration;
+
+    public Course(String courseName, int duration) {
+        this.courseName = courseName;
+        this.duration = duration;
+    }
+
+    public String getDetails() {
+        return courseName + " (" + duration + " months)";
+    }
+}
